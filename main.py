@@ -104,11 +104,22 @@ def main():
     building_dropdown_bs  = main_form_bs.find(id='PageBody_lstBuildings')
     buildings = [{'Value': o['value'], 'Display': o.text } for o in building_dropdown_bs.find_all('option')]
 
-    print(get_rooms('NCB'))
+    empty_count = 0
+    for b in buildings:
+        rooms = get_rooms(b['Value'])
+        for r in rooms:
+            room_schedule = get_room_schedule(b['Value'], b['Display'], r['Value'], 'today', True, False)
+            room_schedule_df = parse_daily_schedule(room_schedule)
+            if room_schedule_df.empty:
+                print(f"{b['Display']} {r['Display']} is empty")
+                empty_count += 1
+    print(f"There are {empty_count} empty rooms at VT")
+                
+    # print(get_rooms('NCB'))
 
-    schedule = get_room_schedule('NCB', 'New Classroom Building', '160', 'today', True, False)
-    daily_schedule_df = parse_daily_schedule(schedule)
-    print(daily_schedule_df)
+    # schedule = get_room_schedule('NCB', 'New Classroom Building', '160', 'today', True, False)
+    # daily_schedule_df = parse_daily_schedule(schedule)
+    # print(daily_schedule_df)
     ...
 
 if __name__ == '__main__':
