@@ -4,6 +4,8 @@ import requests as rq
 from bs4 import BeautifulSoup
 import selenium.webdriver
 from selenium.webdriver.firefox.options import Options
+import pandas as pd
+import numpy as np
 
 CURRENT_TERM_NAME = 'Spring 2022'
 CURRENT_TERM_ID = '202201'
@@ -18,7 +20,7 @@ HEADERS = {
 'Origin': 'http://info.classroomav.vt.edu',
 'Referer': 'http://info.classroomav.vt.edu/RoomSchedule.aspx',
 'Accept-Language': 'en-US,en;q=0.9',
-'Cookie': 'AMCV_4F173DF05A373EBF0A495E41%40AdobeOrg=MCMID%7C86084811541373255674014950237213292543; nlid=3b46a01|45af2f8; ASP.NET_SessionId=e42x35vnyi0iuihbudfmyeej'
+# 'Cookie': 'AMCV_4F173DF05A373EBF0A495E41%40AdobeOrg=MCMID%7C86084811541373255674014950237213292543; nlid=3b46a01|45af2f8; ASP.NET_SessionId=e42x35vnyi0iuihbudfmyeej'
 }
 SESSION = rq.session()
 
@@ -55,6 +57,38 @@ def get_room_schedule(building_code: str, building_name: str, room_num: str, sch
     else:
         return r.text
 
+def parse_full_schedule_table(html: str, id: str) -> pd.DataFrame:
+    ...
+
+def parse_full_schedule(html: str) -> pd.DataFrame:
+    ...
+
+def parse_daily_schedule_table(html: str, id: str) -> pd.DataFrame:
+    schedule_bs = BeautifulSoup(html, "html.parser")
+
+    table_bs = schedule_bs.find('div', {'class': 'DailyTable'}, id=id)
+    table_rows_bs = table_bs.find_all('div', {'class':'TableRow'})
+
+    table_headers: List[str] = []
+    rows: List[pd.Series] = []
+    for table_row_bs in table_rows_bs:
+        header_cells = table_row_bs.find_all('div', {'class':'TableCellHeader'})
+        if header_cells:
+            [table_headers.append(h.text) for h in header_cells]
+        else:
+            time_cell = table_row_bs.find('div', {'class':'DailyTableCellTime'})
+            data_cell = table_row_bs.find('div', {'class':'DailyTableCell'})
+            rows.append(pd.Series([time_cell.text, data_cell.text]))
+
+    daily_schedule_df = pd.DataFrame(rows)
+    daily_schedule_df.columns = table_headers
+    return daily_schedule_df
+
+def parse_daily_schedule(html: str) -> pd.DataFrame:
+    class_schedule_df = parse_daily_schedule_table(html, 'DailyClassScheduleTable')
+    event_schedule_df = parse_daily_schedule_table(html, 'DailyEventScheduleTable')
+    return pd.concat([class_schedule_df, event_schedule_df], axis=0)
+
 def print_all_rooms(buildings: List[Dict[str, str]]):
     for b in buildings:
         rooms = get_rooms(b['Value'])
@@ -64,14 +98,14 @@ def print_all_rooms(buildings: List[Dict[str, str]]):
 
 def main():
     # Grab cookie from the browser for use in requests
-    options = Options()
-    options.headless = True
-    web_drv = selenium.webdriver.Firefox(options=options, executable_path='./geckodriver')
-    web_drv.get(MAIN_PAGE)
+    # options = Options()
+    # options.headless = True
+    # web_drv = selenium.webdriver.Firefox(options=options, executable_path='./geckodriver')
+    # web_drv.get(MAIN_PAGE)
     SESSION.headers.update(HEADERS)
 
-    headers = web_drv.execute_script("var req = new XMLHttpRequest();req.open('GET', document.location, false);req.send(null);return req.getAllResponseHeaders()")
-    print(headers)
+    # headers = web_drv.execute_script("var req = new XMLHttpRequest();req.open('GET', document.location, false);req.send(null);return req.getAllResponseHeaders()")
+    # print(headers)
 
     # for cookie in web_drv.get_cookies():
     #     # if 'sameSite' in cookie:
@@ -87,13 +121,15 @@ def main():
     #    print(c)
         
     main_form = rq.get(MAIN_PAGE)
-    main_form_page = BeautifulSoup(main_form.content, "html.parser")
-    building_dropdown = main_form_page.find(id='PageBody_lstBuildings')
-    buildings = [{'Value': o['value'], 'Display': o.text } for o in building_dropdown.find_all('option')]
+    main_form_bs = BeautifulSoup(main_form.content, "html.parser")
+    building_dropdown_bs  = main_form_bs.find(id='PageBody_lstBuildings')
+    buildings = [{'Value': o['value'], 'Display': o.text } for o in building_dropdown_bs.find_all('option')]
 
     print(get_rooms('NCB'))
-    print(get_room_schedule('NCB', 'New Classroom Building', '160', 'today', True, False))
 
+    schedule = get_room_schedule('NCB', 'New Classroom Building', '160', 'today', True, False)
+    daily_schedule_df = parse_daily_schedule(schedule)
+    print(daily_schedule_df)
     ...
 
 if __name__ == '__main__':
