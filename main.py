@@ -97,28 +97,7 @@ def print_all_rooms(buildings: List[Dict[str, str]]):
             print(f"{r['Display']}\n")
 
 def main():
-    # Grab cookie from the browser for use in requests
-    # options = Options()
-    # options.headless = True
-    # web_drv = selenium.webdriver.Firefox(options=options, executable_path='./geckodriver')
-    # web_drv.get(MAIN_PAGE)
     SESSION.headers.update(HEADERS)
-
-    # headers = web_drv.execute_script("var req = new XMLHttpRequest();req.open('GET', document.location, false);req.send(null);return req.getAllResponseHeaders()")
-    # print(headers)
-
-    # for cookie in web_drv.get_cookies():
-    #     # if 'sameSite' in cookie:
-    #     #     cookie['samesite'] = cookie.pop('sameSite')
-    #     cookie.pop('sameSite')
-    #     if 'httpOnly' in cookie:
-    #         httpO = cookie.pop('httpOnly')
-    #         cookie['rest'] = {'httpOnly': httpO}
-    #     if 'expiry' in cookie:
-    #         cookie['expires'] = cookie.pop('expiry')
-    #     SESSION.cookies.set(**cookie)
-    # for c in SESSION.cookies:
-    #    print(c)
         
     main_form = rq.get(MAIN_PAGE)
     main_form_bs = BeautifulSoup(main_form.content, "html.parser")
