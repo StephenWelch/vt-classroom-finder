@@ -36,10 +36,10 @@ def get_rooms(building_code: str, show_ga_rooms: bool=True, term_id: str=CURRENT
         return [ d for d in r.json()['d'] if d['Value'] ]
 
 def get_room_schedule(building_code: str, building_name: str, room_num: str, schedule: str, show_events: bool, show_past_events: bool, term_id: str=CURRENT_TERM_ID, term_name: str=CURRENT_TERM_NAME) -> Dict[str, str]:
-    # headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     r = SESSION.post('http://info.classroomav.vt.edu/RoomScheduleAjax.aspx', 
-    # headers=headers,
-    json={
+    headers=headers,
+    data={
         'buildingCode': building_code,
         'buildingName': building_name,
         'roomNumber': room_num,
