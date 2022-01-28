@@ -24,6 +24,19 @@ HEADERS = {
 }
 SESSION = rq.session()
 
+def get_buildings(excluded_values: List[str] = []) -> List[Dict[str, str]]:
+    main_form = rq.get(MAIN_PAGE)
+    main_form_bs = BeautifulSoup(main_form.content, "html.parser")
+    building_dropdown_bs  = main_form_bs.find(id='PageBody_lstBuildings')
+    buildings = []
+    for o in building_dropdown_bs.find_all('option'):
+        if o['value'] not in excluded_values:
+            buildings.append({
+                'Value': o['value'], 
+                'Display': o.text
+            })
+    return buildings
+
 def get_rooms(building_code: str, show_ga_rooms: bool=True, term_id: str=CURRENT_TERM_ID) -> Dict[str, str]:
     r = SESSION.post('http://info.classroomav.vt.edu/RoomScheduleAjax.aspx/GetRooms', 
     json={
@@ -99,27 +112,22 @@ def print_all_rooms(buildings: List[Dict[str, str]]):
 def main():
     SESSION.headers.update(HEADERS)
         
-    main_form = rq.get(MAIN_PAGE)
-    main_form_bs = BeautifulSoup(main_form.content, "html.parser")
-    building_dropdown_bs  = main_form_bs.find(id='PageBody_lstBuildings')
-    buildings = [{'Value': o['value'], 'Display': o.text } for o in building_dropdown_bs.find_all('option')]
+    buildings = get_buildings(excluded_values=['GYM', 'NVC'])
 
     empty_count = 0
     for b in buildings:
         rooms = get_rooms(b['Value'])
+        print(f"{b['Display']}:")
         for r in rooms:
             room_schedule = get_room_schedule(b['Value'], b['Display'], r['Value'], 'today', True, False)
             room_schedule_df = parse_daily_schedule(room_schedule)
             if room_schedule_df.empty:
-                print(f"{b['Display']} {r['Display']} is empty")
+                print(f"{b['Value']} {r['Display']}")
                 empty_count += 1
+        print("")
     print(f"There are {empty_count} empty rooms at VT")
-                
-    # print(get_rooms('NCB'))
+ 
 
-    # schedule = get_room_schedule('NCB', 'New Classroom Building', '160', 'today', True, False)
-    # daily_schedule_df = parse_daily_schedule(schedule)
-    # print(daily_schedule_df)
     ...
 
 if __name__ == '__main__':
