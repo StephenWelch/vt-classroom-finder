@@ -29,8 +29,10 @@ def get_rooms(building_code: str, show_ga_rooms: bool=True, term: str=CURRENT_TE
 def main():
     # Grab cookie from the browser for use in requests
     options = Options()
-    options.headless = True
-    web_drv = selenium.webdriver.Firefox(options=options, executable_path='./geckodriver')
+    # options.headless = True
+    # web_drv = selenium.webdriver.Firefox(options=options, executable_path='./geckodriver')
+    options.binary_location = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+    web_drv = selenium.webdriver.Chrome(options=options)
     web_drv.get(MAIN_PAGE)
     SESSION.headers.update(HEADERS)
     # SESSION.headers['referer'] = MAIN_PAGE
